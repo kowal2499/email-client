@@ -185,6 +185,10 @@ export default new Vuex.Store({
                 resolve(true);
 
             })
+        },
+
+        fetchCurrentMessage({state}) {
+            return ApiDealerX.get('mailbox/message/'.concat(state.activeMessage))
         }
 
     },

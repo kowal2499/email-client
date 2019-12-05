@@ -106,7 +106,7 @@
             },
 
             switchFolder(type) {
-                this.$store.dispatch('selectFolder', type);
+                this.$store.dispatch('', type);
             }
         },
 
