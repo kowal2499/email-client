@@ -1,0 +1,18 @@
+$table-micro-cell-padding: 					6px 15px;
+
+.table td.min, .table th.min {
+    width: 1% !important;
+}
+
+.table-xxs {
+    > thead,
+    > tbody,
+    > tfoot {
+        > tr {
+            > th,
+            > td {
+                padding: $table-micro-cell-padding;
+            }
+        }
+    }
+}

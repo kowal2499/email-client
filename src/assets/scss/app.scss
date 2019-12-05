@@ -1,0 +1,22 @@
+@import "libs";
+
+// Konfiguracja
+@import "config";
+@import "shared/utils/ll-functions";
+@import "shared/utils/ll-mixins";
+@import "colors/palette";
+
+@import "mixins";
+@import "variables";
+
+// Import styli bootstrapa (oryginały i zmodyfikowane)
+@import "bootstrap";
+@import "bootstrap_limitless";
+@import "~bootstrap-vue/src/index.scss";
+@import "font-icons";
+
+// Import styli bootstrapa (oryginały i zmodyfikowane)
+@import "layout";
+@import "components";
+@import "colors";
+@import "tables";
