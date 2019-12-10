@@ -19,7 +19,8 @@ export default new Vuex.Store({
         componentsState: {
             folders: 1,
             messages: 1,
-            showing: 'list'
+            showing: 'list',
+            props: {}
         }
 
     },
@@ -112,7 +113,7 @@ export default new Vuex.Store({
                     }
                 })
                 .catch(error => {
-                    console.log(error.response);
+
                 })
                 .finally(() => {
                 })
@@ -232,8 +233,8 @@ export default new Vuex.Store({
             });
         },
 
-        fetchCurrentMessage({state}) {
-            return ApiDealerX.get('mailbox/message/'.concat(state.activeMessage))
+        fetchMessage({state}, uuid = null) {
+            return ApiDealerX.get('mailbox/message/'.concat(uuid ? uuid : state.activeMessage))
         }
 
     },

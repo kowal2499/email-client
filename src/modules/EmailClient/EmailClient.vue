@@ -43,7 +43,10 @@
             </card>
 
             <card title="Nowa wiadomość" slot="content" v-else-if="activeComponent === 'create'">
-                <email-compose slot="content"/>
+                <email-compose
+                        slot="content"
+                        reply-to="d93fe895-19f0-446b-8d17-84c2bdc851d0"
+                />
             </card>
 
             <card title="Lista wiadomości" slot="content" v-else>

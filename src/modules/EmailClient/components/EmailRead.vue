@@ -1,28 +1,47 @@
 <template>
 
     <div>
-        <div class="row bg-light no-gutters p-3 justify-content-between" style="border-bottom: 1px solid #DFDFDF">
-            <div class="col">
-                <div class="btn-group">
-                    <button type="button" class="btn btn-light"><i class="icon-reply"/> <span class="d-none d-lg-inline-block ml-2">Odpowiedz</span></button>
-                    <button type="button" class="btn btn-light"><i class="icon-reply-all"/> <span class="d-none d-lg-inline-block ml-2">Odpowiedz wszystkim</span></button>
-                    <button type="button" class="btn btn-light"><i class="icon-forward"/> <span class="d-none d-lg-inline-block ml-2">Przekaż dalej</span></button>
-                    <button type="button" class="btn btn-light"><i class="icon-bin"/> <span class="d-none d-lg-inline-block ml-2">Usuń</span></button>
+        <toolbar>
+            <template v-slot:buttons-left>
+                <reply-widget
+                    icon-class="icon-reply"
+                    label="Odpowiedz"
+                    :disabled="false"
+                    reply-type="reply"
+                />
+                <reply-widget
+                        icon-class="icon-reply-all"
+                        label="Odpowiedz wszystkim"
+                        :disabled="false"
+                        reply-type="replyAll"
+                />
+                <reply-widget
+                        icon-class="icon-forward"
+                        label="Przekaż dalej"
+                        :disabled="false"
+                        reply-type="forward"
+                />
+                <base-widget
+                        icon-class="icon-bin"
+                        label="Usuń"
+                        :disabled="false"
+                />
+            </template>
+
+            <template v-slot:buttons-right>
+                <div class="text-right">
+                    <b-dropdown v-if="message" variant="light">
+                        <template v-slot:button-content>
+                            <i class="icon-eye"/> Widok {{ viewHTML ? 'HTML' : 'tekstowy' }}
+                        </template>
+
+                        <b-dropdown-item v-if="!!message.textHtml" @click="viewHTML = true">Widok HTML</b-dropdown-item>
+                        <b-dropdown-item v-if="!!message.textPlain" @click="viewHTML = false">Widok tekstowy</b-dropdown-item>
+                    </b-dropdown>
                 </div>
-            </div>
+            </template>
 
-            <div class="col-2 text-right">
-                <b-dropdown v-if="message" variant="light">
-                    <template v-slot:button-content>
-                        <i class="icon-eye"/> Widok {{ viewHTML ? 'HTML' : 'tekstowy' }}
-                    </template>
-
-                    <b-dropdown-item v-if="!!message.textHtml" @click="viewHTML = true">Widok HTML</b-dropdown-item>
-                    <b-dropdown-item v-if="!!message.textPlain" @click="viewHTML = false">Widok tekstowy</b-dropdown-item>
-                </b-dropdown>
-            </div>
-
-        </div>
+        </toolbar>
 
         <div v-if="message">
 
@@ -68,10 +87,13 @@
     import dateHelper from "../utils/dateHelper";
     import Contact from "./email/Contact";
     import Attachment from "./email/Attachment";
+    import Toolbar from "./Toolbar";
+    import BaseWidget from "./Toolbar/BaseWidget";
+    import ReplyWidget from "./Toolbar/ReplyWidget";
 
     export default {
         name: "EmailRead",
-        components: {Contact, Attachment},
+        components: {Contact, Attachment, Toolbar, BaseWidget, ReplyWidget},
 
         data() {
             return {
@@ -84,7 +106,7 @@
 
             this.$parent.$emit('busy', true);
 
-            this.$store.dispatch('fetchCurrentMessage')
+            this.$store.dispatch('fetchMessage')
             .then(({data}) => {
                 if (data.data) {
                     this.message = data.data;
