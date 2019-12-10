@@ -124,7 +124,7 @@
     import Pagination from "./list/Pagination";
     import BaseCheckbox from "../../../components/Form/CheckBox/BaseCheckbox";
     import dateHelper from "../utils/dateHelper";
-    import Toolbar from "./Toolbar/Toolbar";
+    import Toolbar from "./Toolbar";
 
     import MassCheck from "./Toolbar/MassCheck";
     import MassFlag from "./Toolbar/MassFlag";
