@@ -62,7 +62,7 @@
         name: "FoldersList",
 
         computed: {
-            ...mapState(['activeFolderType', 'folders', 'componentsState']),
+            ...mapState(['folders', 'componentsState']),
             hardcodedFolders: () => foldersMap,
             hardcodedFoldersTypes: () => {
                 return foldersMap.map(f => f.type);
@@ -79,20 +79,6 @@
                     this.$parent.$emit('busy', !!value)
                 }
             },
-
-
-            activeFolderType: {
-                deep: true,
-                handler(value) {
-
-                    // Aktywny folder jest nullem w czasie pobierania listy folderów.
-                    // Wiadomości pobieramy dopiero gdy otrzyma inną niż null wartość.
-                    if (value !== null) {
-                        this.$store.dispatch('fetchMessages');
-                    }
-
-                }
-            }
         },
 
         methods: {

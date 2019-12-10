@@ -58,7 +58,6 @@
 
             this.$on('busy', (eventData) => {
                 this.isBusy = eventData;
-                console.log('dostałem event', eventData)
             })
         }
     }

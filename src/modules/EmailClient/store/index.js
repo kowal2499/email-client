@@ -29,7 +29,7 @@ export default new Vuex.Store({
         },
         SELECT_ACCOUNT(state, accountUuid) {
             state.activeAccountUuid = accountUuid;
-            state.componentsState.folders = 1
+            // state.componentsState.folders = 1
         },
         SET_FOLDERS(state, folders) {
             state.folders = folders;
@@ -56,9 +56,9 @@ export default new Vuex.Store({
             state.messagesMeta.page = pageNum;
         },
 
-        SET_FLAG(state, {uids, flagName, flagState}) {
-            if (Array.isArray(uids)) {
-                for(let uid of uids) {
+        SET_FLAG(state, {uuids, flagName, flagState}) {
+            if (Array.isArray(uuids)) {
+                for(let uid of uuids) {
                     let message = state.messages.find(m => m.uuid === uid);
                     if (message) {
                         message.flag[flagName] = flagState;
@@ -68,13 +68,20 @@ export default new Vuex.Store({
         },
 
         UPDATE_FOLDER_COUNTERS(state, data) {
-
             if (data.flagName === 'seen') {
                 let folder = state.folders.find(f => f.type === state.activeFolderType);
-                let modifier = data.flagState ? (data.uids.length * -1) : data.uids.length;
+                let modifier = data.flagState ? (data.uuids.length * -1) : data.uuids.length;
                 folder.info.numUnread += modifier;
             }
+        },
 
+        REMOVE_FROM_FOLDER(state, data) {
+            for (let i of data.uuids) {
+                let idx = state.messages.findIndex(m => m.uuid === i);
+                if (idx !== -1) {
+                    state.messages.splice(idx, 1);
+                }
+            }
         }
 
     },
@@ -101,6 +108,7 @@ export default new Vuex.Store({
                         for (let account of data.data) {
                             commit('ADD_ACCOUNT', account);
                         }
+                        commit('SELECT_ACCOUNT', data.data[0].uuid)
                     }
                 })
                 .catch(error => {
@@ -110,9 +118,14 @@ export default new Vuex.Store({
                 })
         },
 
-        selectAccount({commit}, account) {
+        selectAccount({commit, dispatch}, account) {
             commit('SELECT_ACCOUNT', account.uuid);
-            commit('SELECT_FOLDER', null);
+            // commit('SELECT_FOLDER', null);
+
+            commit('SET_SHOWING', 'list');
+            commit('SET_COMPONENT_STATE', {component: 'folders', newState: 1});
+            commit('SET_COMPONENT_STATE', {component: 'messages', newState: 1});
+
 
             return ApiDealerX.get('mailbox/'.concat(account.uuid))
                 .then(({data}) => {
@@ -120,9 +133,10 @@ export default new Vuex.Store({
                         commit('SET_FOLDERS', data.data.folders || []);
 
                         commit('SET_COMPONENT_STATE', {component: 'folders', newState: 0});
-                        // Po załadowaniu listy folderów wybieramy folder 'INBOX' jako aktywny.
-                        // Zmiana aktywnego folderu odpala event pobrania jego wiadomości.
-                        commit('SELECT_FOLDER', 'INBOX');
+
+                        // Po załadowaniu listy folderów odpalamy akcję wybrania folderu 'INBOX'
+                        // akcja odpowiada m.in. za pobranie wiadomości z tego folderu
+                        dispatch('selectFolder', 'INBOX');
 
                     }
                 })
@@ -164,27 +178,58 @@ export default new Vuex.Store({
             commit('SELECT_MESSAGE', emailUuid);
         },
 
-        selectFolder({commit}, type) {
+        selectFolder({commit, dispatch}, type) {
             commit('SET_PAGE', 1);
             commit('SET_SHOWING', 'list');
             commit('SELECT_FOLDER', type);
+            dispatch('fetchMessages');
         },
 
         newEmail({commit}) {
             commit('SET_SHOWING', 'create')
         },
 
-        setFlag({commit}, payload) {
-            // tu idzie request
+        setFlag({commit, state}, payload) {
 
+            return ApiDealerX.post('mailbox/'.concat(state.activeAccountUuid, '/folder/', state.activeFolderType, '/flag/', payload.flagName, '/', (payload.flagState ? 1 : 0)), {
+                uuids: payload.uuids
+            })
+                .then(() => {
+                    commit('SET_FLAG', payload);
+                    commit('UPDATE_FOLDER_COUNTERS', payload);
+                })
+        },
+
+        moveMessage({commit, state}, payload) {
 
             return new Promise((resolve, reject) => {
+                ApiDealerX.post('mailbox/'.concat(state.activeAccountUuid, '/folder/', payload.sourceFolder, '/move/', payload.destinationFolder), {
+                    uuids: payload.uids
+                })
+                    .then(() => {
+                        commit('REMOVE_FROM_FOLDER', { uuids: payload.uids });
+                        resolve();
+                    })
+                    .catch(() => {
+                        reject();
+                    })
+            });
+        },
 
-                commit('SET_FLAG', payload);
-                commit('UPDATE_FOLDER_COUNTERS', payload);
-                resolve(true);
+        deleteMessage({commit, state}, payload) {
 
-            })
+            return new Promise((resolve, reject) => {
+                ApiDealerX.delete('mailbox/'.concat(state.activeAccountUuid, '/folder/TRASH'), {
+                    data: {uuids: payload.uids}
+                })
+                    .then(() => {
+                        commit('REMOVE_FROM_FOLDER', { uuids: payload.uids });
+                        resolve();
+                    })
+                    .catch(() => {
+                        reject();
+                    })
+            });
         },
 
         fetchCurrentMessage({state}) {

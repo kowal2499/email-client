@@ -10,10 +10,23 @@
             <template slot="sidebar">
 
                 <card :no-init="true">
-                    <div slot="title" class="card-header bg-white font-weight-bold">{{ selectedAccount.email }}</div>
+
+                    <div slot="title" class="card-header bg-white font-weight-bold">
+
+                        <b-dropdown class="w-100">
+                            <template v-slot:button-content>
+                                {{ selectedAccount.email }}
+                            </template>
+
+                            <b-dropdown-item v-for="account in this.availableAccounts" :key="account.uuid" @click.prevent="$store.dispatch('selectAccount', account)">
+                                {{ account.email }}
+                            </b-dropdown-item>
+                        </b-dropdown>
+                    </div>
+
                     <div class="card-body" slot="content">
                         <a @click.prevent="newMessage" href="#" class="btn bg-indigo-400 btn-block">Nowa wiadomość</a>
-                        <a href="#" class="btn bg-info btn-block">Pobierz</a>
+                        <a @click.prevent="fetchMessages" href="#" class="btn bg-info btn-block">Pobierz</a>
                     </div>
                 </card>
 
@@ -63,7 +76,7 @@
         components: {FullWidthLayout, EmailsList, SidebarLayout, FoldersList, Card, EmailCompose, EmailRead},
 
         computed: {
-            ...mapState(['availableAccounts', 'componentsState']),
+            ...mapState(['availableAccounts', 'componentsState', 'activeAccountUuid']),
             ...mapGetters(['selectedAccount']),
 
 
@@ -88,6 +101,9 @@
         methods: {
             newMessage() {
                 this.$store.dispatch('newEmail');
+            },
+            fetchMessages() {
+                this.$store.dispatch('selectAccount', this.$store.getters.selectedAccount);
             }
         },
 

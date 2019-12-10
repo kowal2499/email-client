@@ -1,75 +1,118 @@
 <template>
     <div>
 
-        <div class="row bg-light no-gutters p-3" style="border-bottom: 1px solid #DFDFDF">
-            <div class="col">
-                <div class="btn-group">
+        <toolbar>
+            <template v-slot:buttons-left>
+                <mass-check v-model="checkedMessageUids"/>
+                <mass-flag
+                        :uuids="checkedMessageUids"
+                        :busy-uuids="busyMessages"
+                        @updatedBusyUuids="busyMessages=$event"
+                        @updatedCheckedUuids="checkedMessageUids=$event"
+                />
+                <move
+                        :source="activeFolderType"
+                        destination="TRASH"
+                        icon="icon-bin"
+                        label="Usuń"
+                        :uuids="checkedMessageUids"
+                        :busy-uuids="busyMessages"
+                        @updatedBusyUuids="busyMessages=$event"
+                        @updatedCheckedUuids="checkedMessageUids=$event"
+                        v-if="['INBOX', 'SENT', 'SPAM'].indexOf(activeFolderType) !== -1"
+                />
+                <move
+                        :source="activeFolderType"
+                        destination="SPAM"
+                        icon="icon-spam"
+                        label="Spam"
+                        :uuids="checkedMessageUids"
+                        :busy-uuids="busyMessages"
+                        @updatedBusyUuids="busyMessages=$event"
+                        @updatedCheckedUuids="checkedMessageUids=$event"
+                        v-if="['INBOX'].indexOf(activeFolderType) !== -1"
+                />
+                <move
+                        :source="activeFolderType"
+                        destination="INBOX"
+                        icon="icon-drawer-in"
+                        label="Przywróć do Inbox"
+                        :uuids="checkedMessageUids"
+                        :busy-uuids="busyMessages"
+                        @updatedBusyUuids="busyMessages=$event"
+                        @updatedCheckedUuids="checkedMessageUids=$event"
+                        v-if="['TRASH', 'SPAM'].indexOf(activeFolderType) !== -1"
+                />
+                <delete
+                        icon="icon-bin2"
+                        label="Skasuj"
+                        :uuids="checkedMessageUids"
+                        :busy-uuids="busyMessages"
+                        @updatedBusyUuids="busyMessages=$event"
+                        @updatedCheckedUuids="checkedMessageUids=$event"
+                        v-if="['TRASH', 'DRAFTS', 'SPAM'].indexOf(activeFolderType) !== -1"
+                />
+            </template>
 
-                    <b-dropdown variant="light" size="sm">
-
-                        <template v-slot:button-content>
-                            <i class="icon-checkbox-checked"></i>
-                        </template>
-
-                        <b-dropdown-item @click="checkedCheckAll()">Zaznacz wszystko</b-dropdown-item>
-                        <b-dropdown-item @click="checkedCheckBySeen(true)">Zaznacz przeczytane</b-dropdown-item>
-                        <b-dropdown-item @click="checkedCheckBySeen(false)">Zaznacz nieprzeczytane</b-dropdown-item>
-                        <b-dropdown-divider></b-dropdown-divider>
-                        <b-dropdown-item @click="checkedClear()">Wyczyść zaznaczenie</b-dropdown-item>
-                    </b-dropdown>
-
-                    <b-dropdown variant="light" size="sm">
-
-                        <template v-slot:button-content>
-                            Ustaw zaznaczone jako
-                        </template>
-
-                        <b-dropdown-item @click="setFlag('seen', true)">Przeczytane</b-dropdown-item>
-                        <b-dropdown-item @click="setFlag('seen', false)">Nieprzeczytane</b-dropdown-item>
-                    </b-dropdown>
-
-                    <button type="button" class="btn btn-light"><i class="icon-bin"></i> <span class="d-none d-lg-inline-block ml-2">Usuń</span></button>
-                    <button type="button" @click="setFlag('spam', true)" class="btn btn-light"><i class="icon-spam"></i> <span class="d-none d-lg-inline-block ml-2">Spam</span></button>
-
-
-                </div>
-            </div>
-
-            <div class="col">
+            <template v-slot:buttons-right>
                 <pagination
                         :meta="messagesMeta"
                         @changePage="changePage($event)"
                 />
-            </div>
-        </div>
+            </template>
+        </toolbar>
 
-<!--        <div class="card-body"></div>-->
         <div v-if="messages && messages.length > 0" class="table-responsive">
             <table class="table">
                 <tbody>
-                    <tr v-for="(message, key) in messages" :key="key" @click="readMessage(message.uuid)" style="cursor: pointer">
-                        <td class="table-inbox-checkbox rowlink-skip" @click.stop="" style="background-color: #fcfcfc">
 
-                            <base-checkbox :value="message.uuid" v-model="checkedMessageUuids"/>
-                        </td>
 
-                        <td style="width: 1.3rem" @click.stop="toggleFlag(message, 'seen')">
-                            <i :class="message.flag.seen ? 'icon-circle-small' : 'icon-circles'"></i>
-                        </td>
+                    <template v-for="message in messages">
 
-                        <td style="width: 20%">
-                            <div><strong>{{ message.from.name }}</strong></div>
-                        </td>
-                        <td>
-                            <strong v-if="!message.flag.seen">{{ message.subject }}</strong>
-                            <span v-else>{{ message.subject }}</span>
+                        <tr :key="message.uuid" v-if="isBusy(message.uuid, 'move')">
+                            <td colspan="5" class="text-center">
+                                <i class="icon-spinner anim"/> Trwa przenoszenie ...
+                            </td>
+                        </tr>
 
-                        </td>
+                        <tr v-else :key="message.uuid" @click="readMessage(message.uuid)" style="cursor: pointer; position:relative;">
+                            <td class="table-inbox-checkbox rowlink-skip" @click.stop="" style="background-color: #fcfcfc">
+                                <base-checkbox :value="message.uuid" v-model="checkedMessageUids"/>
+                            </td>
 
-                        <td class="text-right" style="width: 20%">
-                            {{ formatDate(message.date) }}
-                        </td>
-                    </tr>
+                            <td class="flags" @click.stop="">
+
+                                <i v-if="isBusy(message.uuid, 'seen')" class="icon-spinner anim"/>
+                                <i
+                                        v-else
+                                        :class="message.flag.seen ? 'icon-circle-small' : 'icon-circles unseen'"
+                                        @click.prevent="updateFlag(message.uuid, 'seen', !message.flag.seen)"
+                                />
+
+                                <i v-if="isBusy(message.uuid, 'stared')" class="icon-spinner anim"/>
+                                <i
+                                        v-else
+                                        :class="message.flag.stared ? 'icon-star-full2 stared' : 'icon-star-empty3'"
+                                        @click.prevent="updateFlag(message.uuid, 'stared', !message.flag.stared)"
+                                />
+                            </td>
+
+                            <td style="width: 20%">
+                                <div><strong>{{ message.from.name }}</strong></div>
+                            </td>
+                            <td>
+                                <strong v-if="!message.flag.seen">{{ message.subject }}</strong>
+                                <span v-else>{{ message.subject }}</span>
+
+                            </td>
+
+                            <td class="text-right" style="width: 20%">
+                                {{ formatDate(message.date) }}
+                            </td>
+                        </tr>
+
+                    </template>
+
                 </tbody>
             </table>
         </div>
@@ -78,18 +121,23 @@
 
 <script>
     import {mapState} from 'vuex';
-    import moment from 'moment';
     import Pagination from "./list/Pagination";
     import BaseCheckbox from "../../../components/Form/CheckBox/BaseCheckbox";
+    import dateHelper from "../utils/dateHelper";
+    import Toolbar from "./Toolbar/Toolbar";
+
+    import MassCheck from "./Toolbar/MassCheck";
+    import MassFlag from "./Toolbar/MassFlag";
+    import Move from "./Toolbar/Move";
+    import Delete from "./Toolbar/Delete";
 
     export default {
 
         name: "EmailsList",
-        components: {Pagination, BaseCheckbox},
+        components: {Toolbar, Pagination, BaseCheckbox, MassCheck, MassFlag, Move, Delete},
 
         computed: {
-            ...mapState(['messages', 'componentsState', 'messagesMeta']),
-
+            ...mapState(['messages', 'componentsState', 'messagesMeta', 'activeFolderType']),
         },
 
         watch: {
@@ -99,18 +147,11 @@
                     this.$parent.$emit('busy', !!value)
                 }
             },
-
         },
 
         methods: {
             formatDate(date) {
-
-                let mDate = moment(date);
-
-                if (mDate && mDate.isValid()) {
-                    return mDate.format('YYYY-MM-DD HH:mm:ss');
-                }
-                return '';
+                return dateHelper.getDate(date).concat(' ', dateHelper.getTime(date));
             },
 
             readMessage(uuid) {
@@ -121,67 +162,96 @@
                 this.$store.dispatch('changePage', step);
             },
 
-            checkedClear() {
-                this.checkedMessageUuids = [];
-            },
+            /**
+             *  Aktualizacja flagi na pojedynczym wierszu tabeli
+             */
+            updateFlag(messageUuid, flagName, flagState) {
 
-            checkedCheckAll() {
-                this.checkedMessageUuids = this.messages.map(m => m.uuid);
-            },
+                // jeśli uid jest aktualnie przetwarzany to wyjdź
+                if (this.busyMessages[flagName].indexOf(messageUuid) !== -1) {
+                    return;
+                }
 
-            checkedCheckBySeen(seen) {
-                this.checkedMessageUuids = this.messages.filter(m => m.flag.seen === seen).map(m => m.uuid);
-            },
+                // dodanie uida do zajętych
+                this.busyMessages[flagName].push(messageUuid);
 
-            setFlag(flag, state) {
-
-                // odrzuć te wiadomości przy których flaga już jest taka jak wymagana
-                let filteredMessages = this.checkedMessageUuids.filter(uid => {
-                    const message = this.messages.find(m => m.uuid === uid);
-
-                    if (!message || message.flag[flag] === state) {
-                        return false;
-                    }
-                    return true;
-                });
-
-                this.$store.dispatch('setFlag', {
-                    uids: filteredMessages,
-                    flagName: flag,
-                    flagState: state
-                })
-                .then(() => {
-                    this.checkedMessageUuids = [];
-                })
-                .catch(() => {
-                    console.log('fail')
-                })
-
+                // aktualizacja
+                this.$store.dispatch('setFlag', {uuids: [messageUuid], flagName, flagState})
+                    .then(() => {
+                        // usunięcie uida z zajętych
+                        const idx = this.busyMessages[flagName].findIndex(b => b === messageUuid);
+                        if (idx !== -1) {
+                            this.busyMessages[flagName].splice(idx, 1);
+                        }
+                    })
                 ;
             },
 
-            toggleFlag(message, flag) {
-                this.$store.dispatch('setFlag', {
-                    uids: [message.uuid],
-                    flagName: flag,
-                    flagState: !message.flag.seen
-                })
+            isBusy(uid, groupName) {
+                return this.busyMessages[groupName].indexOf(uid) !== -1;
             }
-
         },
 
         data() {
             return {
-                checkedMessageUuids: [],
+                checkedMessageUids: [],
+
+                busyMessages: {
+                    seen: [],
+                    stared: [],
+                    spam: [],
+                    move: [],
+                },
             }
         },
-
-        created() {
-
-        }
     }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+
+    tr.disabled-row {
+        opacity: 0.2;
+    }
+
+    tr {
+        position: relative;
+    }
+
+    td {
+
+        &.flags {
+            width: 6rem;
+        }
+
+        i {
+            color: #d1d1d1;
+
+            &.unseen {
+                color: #5C6BC0
+            }
+
+            &.stared {
+                color: goldenrod;
+            }
+
+            &+i {
+                margin-left: 1rem;
+            }
+
+            &.anim {
+                color: #333;
+                animation: anim-rotate 2s infinite linear;
+
+                @keyframes anim-rotate {
+                    0% {
+                        transform: rotate(0);
+                    }
+                    100% {
+                        transform: rotate(360deg);
+                    }
+                }
+            }
+        }
+    }
 
 </style>
