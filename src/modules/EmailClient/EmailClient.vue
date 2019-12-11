@@ -2,7 +2,7 @@
 
     <div>
 
-        <full-width-layout v-if="activeComponent === 'loading'">
+        <full-width-layout v-if="false === isLoaded">
             <div class="alert alert-light text-center" slot="content">{{ statusMessage }}</div>
         </full-width-layout>
 
@@ -84,14 +84,6 @@
                 }
                 return '';
             },
-
-            activeComponent() {
-                let name = 'loading';
-                if (this.isLoaded) {
-                    name = this.componentsState.showing;
-                }
-                return name;
-            }
         },
 
         methods: {

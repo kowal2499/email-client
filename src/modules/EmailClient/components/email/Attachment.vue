@@ -2,7 +2,7 @@
     <a href="#" :disabled="busy" @click.prevent="downloadFile()">
 
         <div class="attachment">
-            <div class="icon" :class="{'anim': busy}"><i :class="getIcon()"></i></div>
+            <div class="icon" :class="{'anim': busy}"><i :class="getIcon()"/></div>
             <div class="description">{{ name }}</div>
         </div>
 
@@ -65,7 +65,6 @@
             },
 
             downloadFile() {
-
                 this.busy = true;
                 ApiDealerX.get(this.url, {responseType: 'blob'})
                    .then((response) => {
@@ -75,7 +74,6 @@
                     .finally(() => { this.busy = false; })
                ;
             }
-
         },
 
         data() {

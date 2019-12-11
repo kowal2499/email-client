@@ -98,7 +98,7 @@
                             </td>
 
                             <td style="width: 20%">
-                                <div><strong>{{ message.from.name }}</strong></div>
+                                <div><strong>{{ getFrom(message) }}</strong></div>
                             </td>
                             <td>
                                 <strong v-if="!message.flag.seen">{{ message.subject }}</strong>
@@ -189,6 +189,10 @@
 
             isBusy(uid, groupName) {
                 return this.busyMessages[groupName].indexOf(uid) !== -1;
+            },
+
+            getFrom(message) {
+                return message.from.name ? message.from.name : message.from.email;
             }
         },
 

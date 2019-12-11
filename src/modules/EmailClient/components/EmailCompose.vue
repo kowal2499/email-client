@@ -10,7 +10,6 @@
                         :button-class="'btn-primary'"
                         :message="message"
                         @isSending="sendingNotify($event)"
-
                 />
             </template>
             <template v-slot:buttons-right/>
@@ -31,6 +30,7 @@
                 <div class="col-sm-11">
                     <v-select taggable multiple push-tags
                               :create-option="createOption"
+                              :selectOnKeyCodes="[188,13,9]"
                               v-model="to"></v-select>
                 </div>
             </div>
@@ -39,6 +39,7 @@
                 <div class="col-sm-11">
                     <v-select taggable multiple push-tags
                               :create-option="createOption"
+                              :selectOnKeyCodes="[188,13,9]"
                               v-model="cc"></v-select>
                 </div>
             </div>
@@ -47,6 +48,7 @@
                 <div class="col-sm-11">
                     <v-select taggable multiple push-tags
                                :create-option="createOption"
+                              :selectOnKeyCodes="[188,13,9]"
                                v-model="bcc"></v-select>
                 </div>
             </div>
@@ -73,11 +75,7 @@
                         @vdropzone-error="onDropzoneError"
                         @vdropzone-success="onDropzoneSuccess"
                         @vdropzone-removed-file="onDropzoneFileRemove"
-                >
-                    <div class="dz-message" data-dz-message><span>Drag your image here!</span></div>
-
-
-                </vue2dropzone>
+                />
             </div>
         </div>
 
@@ -93,7 +91,6 @@
     import "vue-select/src/scss/vue-select.scss";
     import Vue2dropzone from "vue2-dropzone";
     import client from "../api/ApiDealerX";
-
     import {mapGetters} from 'vuex';
 
     const busyDefaultMessage = 'Trwa wczytywanie wiadomości ...';
@@ -140,7 +137,7 @@
         created() {
 
             // dodanie stopki
-            this.message.textHtml = '<br>'.concat(this.selectedAccount.footer);
+            this.message.textHtml = `<br>${this.selectedAccount.footer}`;
 
             this.message.from = {
                 name: this.selectedAccount.email,
@@ -152,7 +149,7 @@
             if (this.replyTo.length > 0) {
                 this.isBusy = true;
 
-                this.$store.dispatch('fetchMessage', this.replyTo)
+                this.$store.dispatch('fetchMessageForEdit', this.replyTo)
                     .then(({data}) => {
                         if (data.data) {
                             let htmlTmp = this.message.textHtml;
@@ -163,13 +160,25 @@
 
                             this.message.inReplyTo = this.message.messageId;
                             this.message.textHtml = htmlTmp.concat('<br>', this.message.textHtml);
+                            this.forwardedAttachments = [
+                                ...this.message.attachments
+                            ];
+
                             this.message.from = {
                                 name: this.selectedAccount.email,
                                 email: this.selectedAccount.email
                             };
-
-                            // todo: obsługa załączników w wiadomościach przekazanych
-                            this.message.attachments = [];
+                            switch (this.replyType) {
+                                case 'reply':
+                                case 'replyAll':
+                                    this.message.to = this.message.replyTo;
+                                    this.message.subject = `Re: ${this.message.subject}`;
+                                    break;
+                                case 'forward':
+                                    this.message.to = [];
+                                    this.message.subject = `Fwd: ${this.message.subject}`;
+                                    break;
+                            }
 
                         }
                     })
@@ -249,7 +258,7 @@
 
             onDropzoneError() {
                 this.$flash.error('Błąd podczas dodawania załącznika');
-            }
+            },
         },
 
         data() {
@@ -273,6 +282,7 @@
 
                 busyMessage: 'Trwa wczytywanie wiadomości ...',
 
+                forwardedAttachments: [],
                 dropzoneFilesMap: {},
 
                 dropzoneConfig: {
@@ -282,8 +292,10 @@
                         'Cache-Control': '',
                         'X-Requested-With': ''
                     },
+                    createImageThumbnails: false,
                     thumbnailWidth: 150,
                     maxFilesize: 5,
+                    maxFiles: 5,
                     paramName: 'files',
                     acceptedFiles: 'image/*,application/pdf,.docx,.doc,.xlsx,.xls,.ppt,.pptx',
                     autoProcessQueue: true,

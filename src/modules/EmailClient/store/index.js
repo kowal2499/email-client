@@ -117,6 +117,10 @@ export default new Vuex.Store({
                     state.messages.splice(idx, 1);
                 }
             }
+        },
+
+        SET_STATE(state, {elementId, elementState}) {
+            state.componentsState[elementId] = elementState;
         }
 
     },
@@ -268,6 +272,10 @@ export default new Vuex.Store({
 
         fetchMessage({state}, uuid = null) {
             return ApiDealerX.get('mailbox/message/'.concat(uuid ? uuid : state.activeMessage))
+        },
+
+        fetchMessageForEdit({state}, uuid) {
+            return ApiDealerX.get('mailbox/message/'.concat(uuid, '/to_edit'))
         },
 
         sendMessage({state}, payload) {
