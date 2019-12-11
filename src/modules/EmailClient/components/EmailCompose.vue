@@ -73,7 +73,11 @@
                         @vdropzone-error="onDropzoneError"
                         @vdropzone-success="onDropzoneSuccess"
                         @vdropzone-removed-file="onDropzoneFileRemove"
-                />
+                >
+                    <div class="dz-message" data-dz-message><span>Drag your image here!</span></div>
+
+
+                </vue2dropzone>
             </div>
         </div>
 
@@ -285,6 +289,9 @@
                     autoProcessQueue: true,
                     addRemoveLinks: true,
                     uploadMultiple: true,
+                    dictRemoveFile: 'Usuń plik',
+                    dictDefaultMessage: 'Kliknij by załączyć pliki',
+                    dictCancelUpload: 'Przerwij przesyłanie'
                 },
 
                 froalaConfig: {
