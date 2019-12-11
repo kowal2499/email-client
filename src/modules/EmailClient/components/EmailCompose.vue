@@ -59,7 +59,22 @@
         </div>
 
         <div class="card-body">
-            <froala v-model="message.textHtml" :config="config"/>
+            <froala v-model="message.textHtml" :config="froalaConfig"/>
+        </div>
+
+        <div class="card-body">
+            <div class="row">
+                <i class="icon-attachment col-sm-1"></i>
+                <vue2dropzone
+                        class="col-sm-11"
+                        ref="emailComposeDropzone"
+                        id="emailComposeDropzone"
+                        :options="dropzoneConfig"
+                        @vdropzone-error="onDropzoneError"
+                        @vdropzone-success="onDropzoneSuccess"
+                        @vdropzone-removed-file="onDropzoneFileRemove"
+                />
+            </div>
         </div>
 
     </overlay>
@@ -72,13 +87,16 @@
     import SendAction from "./Toolbar/SendAction";
     import vSelect from 'vue-select'
     import "vue-select/src/scss/vue-select.scss";
+    import Vue2dropzone from "vue2-dropzone";
+    import client from "../api/ApiDealerX";
+
     import {mapGetters} from 'vuex';
 
     const busyDefaultMessage = 'Trwa wczytywanie wiadomości ...';
 
     export default {
         name: "EmailCompose",
-        components: { Toolbar, Overlay, SendAction, vSelect },
+        components: { Toolbar, Overlay, SendAction, vSelect, Vue2dropzone },
         props: {
             replyTo: {
                 type: String,
@@ -112,7 +130,7 @@
 
             isInvalid() {
                 return this.message.to.length === 0 && this.message.cc.length === 0 && this.message.bcc.length === 0;
-            }
+            },
         },
 
         created() {
@@ -124,6 +142,8 @@
                 name: this.selectedAccount.email,
                 email: this.selectedAccount.email
             };
+
+            this.message.attachments = [];
 
             if (this.replyTo.length > 0) {
                 this.isBusy = true;
@@ -144,6 +164,9 @@
                                 email: this.selectedAccount.email
                             };
 
+                            // todo: obsługa załączników w wiadomościach przekazanych
+                            this.message.attachments = [];
+
                         }
                     })
                     .catch(error => {})
@@ -151,7 +174,6 @@
                         this.isBusy = false
                     })
                 ;
-
             }
 
         },
@@ -195,6 +217,34 @@
                     this.isBusy = false;
                     this.busyMessage = busyDefaultMessage;
                 }
+            },
+
+            /**
+             * Dodawanie załączników do wiadomości
+             */
+            onDropzoneSuccess(file, response) {
+                let responseObject = JSON.parse(response);
+                if (Array.isArray(responseObject.data)) {
+
+                    responseObject.data.forEach(attachment => {
+                        this.message.attachments.push(attachment);
+                        this.$flash.success('Załącznik został dodany');
+
+                        this.dropzoneFilesMap[file.upload.uuid] = attachment.id;
+                    });
+                }
+            },
+
+            /**
+             *  Usuwanie załączników z wiadomości
+             */
+            onDropzoneFileRemove(file, error, xhr) {
+                let idx = this.message.attachments.findIndex(a => a.id === this.dropzoneFilesMap[file.upload.uuid])
+                this.message.attachments.splice(idx, 1);
+            },
+
+            onDropzoneError() {
+                this.$flash.error('Błąd podczas dodawania załącznika');
             }
         },
 
@@ -219,7 +269,25 @@
 
                 busyMessage: 'Trwa wczytywanie wiadomości ...',
 
-                config: {
+                dropzoneFilesMap: {},
+
+                dropzoneConfig: {
+                    url: client.defaults.baseURL.concat('mailbox/', this.$store.state.activeAccountUuid, '/attachment'),
+                    headers: {
+                        'Authorization': client.defaults.headers.common.Authorization,
+                        'Cache-Control': '',
+                        'X-Requested-With': ''
+                    },
+                    thumbnailWidth: 150,
+                    maxFilesize: 5,
+                    paramName: 'files',
+                    acceptedFiles: 'image/*,application/pdf,.docx,.doc,.xlsx,.xls,.ppt,.pptx',
+                    autoProcessQueue: true,
+                    addRemoveLinks: true,
+                    uploadMultiple: true,
+                },
+
+                froalaConfig: {
                     language: 'pl',
                     attribution: false,
                     toolbarButtons: {

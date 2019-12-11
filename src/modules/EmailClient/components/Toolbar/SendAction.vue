@@ -12,7 +12,6 @@
             handlerFn() {
 
                 let msg = { ...this.message };
-                delete msg.attachments;
                 delete msg.content;
 
                 this.$emit('isSending', true);
