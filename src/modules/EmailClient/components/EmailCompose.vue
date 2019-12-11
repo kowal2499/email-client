@@ -1,11 +1,10 @@
 <template>
-    <overlay :show="isBusy" :message="busyMessage">
-
+    <div>
         <toolbar>
             <template v-slot:buttons-left>
                 <send-action
                         :label="'Wyślij'"
-                        :disabled="isBusy || isInvalid"
+                        :disabled="busy || isInvalid"
                         :icon-class="'icon-paperplane'"
                         :button-class="'btn-primary'"
                         :message="message"
@@ -15,71 +14,74 @@
             <template v-slot:buttons-right/>
         </toolbar>
 
-        <div style="border-bottom: 1px solid rgb(223, 223, 223)">
-<!--            <div class="row no-gutters py-1 px-3">-->
-<!--                <label class="col-sm-1 col-form-label">Od: </label>-->
-<!--                <div class="col-sm-11">-->
-<!--                    <v-select taggable multiple-->
-<!--                              :disabled="true"-->
-<!--                              :options="[message.from.email]"-->
-<!--                              v-model="message.from.email"></v-select>-->
-<!--                </div>-->
-<!--            </div>-->
-            <div class="row no-gutters py-1 px-3">
-                <label class="col-sm-1 col-form-label">Do: </label>
-                <div class="col-sm-11">
-                    <v-select taggable multiple push-tags
-                              :create-option="createOption"
-                              :selectOnKeyCodes="[188,13,9]"
-                              v-model="to"></v-select>
-                </div>
-            </div>
-            <div class="row no-gutters pb-1 px-3">
-                <label class="col-sm-1 col-form-label">DW: </label>
-                <div class="col-sm-11">
-                    <v-select taggable multiple push-tags
-                              :create-option="createOption"
-                              :selectOnKeyCodes="[188,13,9]"
-                              v-model="cc"></v-select>
-                </div>
-            </div>
-            <div class="row no-gutters pb-1 px-3">
-                <label class="col-sm-1 col-form-label">UDW: </label>
-                <div class="col-sm-11">
-                    <v-select taggable multiple push-tags
-                               :create-option="createOption"
-                              :selectOnKeyCodes="[188,13,9]"
-                               v-model="bcc"></v-select>
-                </div>
-            </div>
-            <div class="row no-gutters pb-1 px-3">
-                <label class="col-sm-1 col-form-label">Temat: </label>
-                <div class="col-sm-11">
-                    <input type="text" class="form-control" v-model="message.subject">
-                </div>
-            </div>
-        </div>
+        <overlay :show="busy" :message="busyMessage">
 
-        <div class="card-body">
-            <froala v-model="message.textHtml" :config="froalaConfig"/>
-        </div>
-
-        <div class="card-body">
-            <div class="row">
-                <i class="icon-attachment col-sm-1"></i>
-                <vue2dropzone
-                        class="col-sm-11"
-                        ref="emailComposeDropzone"
-                        id="emailComposeDropzone"
-                        :options="dropzoneConfig"
-                        @vdropzone-error="onDropzoneError"
-                        @vdropzone-success="onDropzoneSuccess"
-                        @vdropzone-removed-file="onDropzoneFileRemove"
-                />
+            <div style="border-bottom: 1px solid rgb(223, 223, 223)">
+    <!--            <div class="row no-gutters py-1 px-3">-->
+    <!--                <label class="col-sm-1 col-form-label">Od: </label>-->
+    <!--                <div class="col-sm-11">-->
+    <!--                    <v-select taggable multiple-->
+    <!--                              :disabled="true"-->
+    <!--                              :options="[message.from.email]"-->
+    <!--                              v-model="message.from.email"></v-select>-->
+    <!--                </div>-->
+    <!--            </div>-->
+                <div class="row no-gutters py-1 px-3">
+                    <label class="col-sm-1 col-form-label">Do: </label>
+                    <div class="col-sm-11">
+                        <v-select taggable multiple push-tags
+                                  :create-option="createOption"
+                                  :selectOnKeyCodes="[188,13,9]"
+                                  v-model="to"></v-select>
+                    </div>
+                </div>
+                <div class="row no-gutters pb-1 px-3">
+                    <label class="col-sm-1 col-form-label">DW: </label>
+                    <div class="col-sm-11">
+                        <v-select taggable multiple push-tags
+                                  :create-option="createOption"
+                                  :selectOnKeyCodes="[188,13,9]"
+                                  v-model="cc"></v-select>
+                    </div>
+                </div>
+                <div class="row no-gutters pb-1 px-3">
+                    <label class="col-sm-1 col-form-label">UDW: </label>
+                    <div class="col-sm-11">
+                        <v-select taggable multiple push-tags
+                                   :create-option="createOption"
+                                  :selectOnKeyCodes="[188,13,9]"
+                                   v-model="bcc"></v-select>
+                    </div>
+                </div>
+                <div class="row no-gutters pb-1 px-3">
+                    <label class="col-sm-1 col-form-label">Temat: </label>
+                    <div class="col-sm-11">
+                        <input type="text" class="form-control" v-model="message.subject">
+                    </div>
+                </div>
             </div>
-        </div>
 
-    </overlay>
+            <div class="card-body">
+                <froala v-model="message.textHtml" :config="froalaConfig"/>
+            </div>
+
+            <div class="card-body">
+                <div class="row">
+                    <i class="icon-attachment col-sm-1"/>
+                    <vue2dropzone
+                            class="col-sm-11"
+                            ref="emailComposeDropzone"
+                            id="emailComposeDropzone"
+                            :options="dropzoneConfig"
+                            @vdropzone-error="onDropzoneError"
+                            @vdropzone-success="onDropzoneSuccess"
+                            @vdropzone-removed-file="onDropzoneFileRemove"
+                    />
+                </div>
+            </div>
+
+        </overlay>
+    </div>
 </template>
 
 <script>
@@ -90,6 +92,7 @@
     import vSelect from 'vue-select'
     import "vue-select/src/scss/vue-select.scss";
     import Vue2dropzone from "vue2-dropzone";
+    import StateControl from "../utils/StateControl";
     import client from "../api/ApiDealerX";
     import {mapGetters} from 'vuex';
 
@@ -97,6 +100,8 @@
 
     export default {
         name: "EmailCompose",
+        extends: StateControl,
+
         components: { Toolbar, Overlay, SendAction, vSelect, Vue2dropzone },
         props: {
             replyTo: {
@@ -147,7 +152,6 @@
             this.message.attachments = [];
 
             if (this.replyTo.length > 0) {
-                this.isBusy = true;
 
                 this.$store.dispatch('fetchMessageForEdit', this.replyTo)
                     .then(({data}) => {
@@ -183,9 +187,6 @@
                         }
                     })
                     .catch(error => {})
-                    .finally(() => {
-                        this.isBusy = false
-                    })
                 ;
             }
 
@@ -213,7 +214,7 @@
             createOption: item => ({ name: item, email: item, label: `${item} <${item}>`}),
 
             /**
-             * Gettery i settery wiążące miltiselekty z modelem
+             * Gettery i settery wiążące multiselekty z modelem
              */
             unifiedGetter(key) {
                 return this.message[key].map(addr => this.generateAddressOption(addr))
@@ -224,10 +225,10 @@
 
             sendingNotify(isSending) {
                 if (isSending) {
-                    this.isBusy = true;
+                    // this.isBusy = true;
                     this.busyMessage = 'Trwa wysyłanie wiadomości...';
                 } else {
-                    this.isBusy = false;
+                    // this.isBusy = false;
                     this.busyMessage = busyDefaultMessage;
                 }
             },

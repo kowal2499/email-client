@@ -31,7 +31,10 @@
                 </card>
 
                 <card title="Nawigacja">
-                    <folders-list slot="content" />
+                    <folders-list
+                            :state-indicator="'foldersList'"
+                            slot="content"
+                    />
                 </card>
 
             </template>
@@ -104,7 +107,6 @@
                         this.$store.dispatch('selectAccount', this.availableAccounts[0]);
                     }
                 })
-
             ;
         },
 

@@ -4,6 +4,14 @@ import ApiDealerX from '../api/ApiDealerX';
 
 Vue.use(Vuex);
 
+const STATE_FOLDERS_KEY = 'foldersList';
+const STATE_MESSAGES_KEY = 'messagesList';
+const STATE_EMAIL_READ_KEY = 'emailRead';
+const STATE_EMAIL_COMPOSE_KEY = 'emailCompose';
+
+const STATE_BUSY = 'busy';
+const STATE_IDLE = 'idle';
+
 export default new Vuex.Store({
     state: {
         availableAccounts: [],
@@ -20,6 +28,11 @@ export default new Vuex.Store({
             folders: 1,
             messages: 1,
             showing: 'list',
+
+            [STATE_FOLDERS_KEY]: 'idle',
+            [STATE_MESSAGES_KEY]: 'idle',
+            [STATE_EMAIL_READ_KEY]: 'idle',
+            [STATE_EMAIL_COMPOSE_KEY]: 'idle',
         },
 
         route: {
@@ -54,9 +67,6 @@ export default new Vuex.Store({
         SELECT_MESSAGE(state, messageUuid) {
             state.activeMessage = messageUuid;
         },
-        SET_SHOWING(state, data) {
-            state.componentsState.showing = data;
-        },
         SET_PAGE(state, pageNum) {
             state.messagesMeta.page = pageNum;
         },
@@ -83,21 +93,33 @@ export default new Vuex.Store({
                 emailList: {
                     componentName: 'emails-list',
                     title: 'Lista wiadomości',
+                    props: {
+                        stateIndicator: STATE_MESSAGES_KEY
+                    }
                 },
                 emailRead: {
                     componentName: 'email-read',
                     title: 'Treść wiadomości',
+                    props: {
+                        stateIndicator: STATE_EMAIL_READ_KEY
+                    },
                 },
                 emailCreate: {
                     componentName: 'email-compose',
                     title: 'Tworzenie wiadomości',
+                    props: {
+                        stateIndicator: STATE_EMAIL_COMPOSE_KEY
+                    }
                 }
             };
 
             if (routes.hasOwnProperty(routeName)) {
                 state.route.componentName = routes[routeName].componentName;
                 state.route.title = routes[routeName].title;
-                state.route.props = args || {};
+                state.route.props = {
+                    ...routes[routeName].props,
+                    ...args
+                };
             }
         },
 
@@ -119,8 +141,8 @@ export default new Vuex.Store({
             }
         },
 
-        SET_STATE(state, {elementId, elementState}) {
-            state.componentsState[elementId] = elementState;
+        SET_STATE(state, {elementKey, elementState}) {
+            state.componentsState[elementKey] = elementState;
         }
 
     },
@@ -136,8 +158,8 @@ export default new Vuex.Store({
          */
         initialize({commit}) {
 
-            commit('SET_COMPONENT_STATE', {component: 'folders', newState: 1});
-            commit('SET_COMPONENT_STATE', {component: 'messages', newState: 1});
+            commit('SET_STATE', {elementKey: STATE_FOLDERS_KEY, elementState: STATE_BUSY});
+            commit('SET_STATE', {elementKey: STATE_MESSAGES_KEY, elementState: STATE_BUSY});
             commit('SET_ROUTE_BY_NAME', {routeName: 'emailList'});
 
             return ApiDealerX.get('mailbox')
@@ -146,7 +168,6 @@ export default new Vuex.Store({
                         for (let account of data.data) {
                             commit('ADD_ACCOUNT', account);
                         }
-                        commit('SELECT_ACCOUNT', data.data[0].uuid)
                     }
                 })
                 .catch(error => {
@@ -156,34 +177,39 @@ export default new Vuex.Store({
                 })
         },
 
-        selectAccount({commit, dispatch}, account) {
+        selectAccount({commit, dispatch, state}, account) {
             commit('SELECT_ACCOUNT', account.uuid);
-            // commit('SELECT_FOLDER', null);
-
             commit('SET_ROUTE_BY_NAME', {routeName: 'emailList'});
 
-            commit('SET_COMPONENT_STATE', {component: 'folders', newState: 1});
-            commit('SET_COMPONENT_STATE', {component: 'messages', newState: 1});
+            if (state.componentsState[STATE_FOLDERS_KEY] !== STATE_BUSY) {
+                commit('SET_STATE', {elementKey: STATE_FOLDERS_KEY, elementState: STATE_BUSY});
+            }
+
+            if (state.componentsState[STATE_MESSAGES_KEY] !== STATE_BUSY) {
+                commit('SET_STATE', {elementKey: STATE_MESSAGES_KEY, elementState: STATE_BUSY});
+            }
 
             return ApiDealerX.get('mailbox/'.concat(account.uuid))
                 .then(({data}) => {
                     if (data.data) {
                         commit('SET_FOLDERS', data.data.folders || []);
-
-                        commit('SET_COMPONENT_STATE', {component: 'folders', newState: 0});
+                        commit('SET_STATE', {elementKey: STATE_FOLDERS_KEY, elementState: STATE_IDLE});
 
                         // Po załadowaniu listy folderów odpalamy akcję wybrania folderu 'INBOX'
                         // akcja odpowiada m.in. za pobranie wiadomości z tego folderu
-                        dispatch('selectFolder', 'INBOX');
-
+                        if (state.folders.map(f => f.type).indexOf('INBOX') !== -1) {
+                            dispatch('selectFolder', 'INBOX');
+                        }
                     }
                 })
                 .catch(() => {})
         },
 
         fetchMessages({commit, state}) {
-            // commit('SET_MESSAGES', null);
-            commit('SET_COMPONENT_STATE', {component: 'messages', newState: 1});
+
+            if (state.componentsState[STATE_MESSAGES_KEY] !== STATE_BUSY) {
+                commit('SET_STATE', {elementKey: STATE_MESSAGES_KEY, elementState: STATE_BUSY});
+            }
 
             let params = {};
             if (state.messagesMeta.page) {
@@ -202,7 +228,7 @@ export default new Vuex.Store({
                 })
                 .catch(() => {})
                 .finally(() => {
-                    commit('SET_COMPONENT_STATE', {component: 'messages', newState: 0});
+                    commit('SET_STATE', {elementKey: STATE_MESSAGES_KEY, elementState: STATE_IDLE});
                 })
         },
 
@@ -270,26 +296,58 @@ export default new Vuex.Store({
             });
         },
 
-        fetchMessage({state}, uuid = null) {
-            return ApiDealerX.get('mailbox/message/'.concat(uuid ? uuid : state.activeMessage))
+        fetchSingleMessage({state, commit}, uuid = null) {
+
+            commit('SET_STATE', {elementKey: STATE_EMAIL_READ_KEY, elementState: STATE_BUSY});
+
+            return new Promise((resolve, reject) => {
+                ApiDealerX.get('mailbox/message/'.concat(uuid ? uuid : state.activeMessage))
+                    .then((data) => {
+                        commit('SET_STATE', {elementKey: STATE_EMAIL_READ_KEY, elementState: STATE_IDLE});
+                        resolve(data);
+                    })
+                    .catch((data) => {
+                        reject(data);
+                    })
+            });
+
+
         },
 
-        fetchMessageForEdit({state}, uuid) {
-            return ApiDealerX.get('mailbox/message/'.concat(uuid, '/to_edit'))
+        fetchMessageForEdit({state, commit}, uuid) {
+
+            commit('SET_STATE', {elementKey: STATE_EMAIL_COMPOSE_KEY, elementState: STATE_BUSY});
+
+            return new Promise((resolve, reject) => {
+                ApiDealerX.get('mailbox/message/'.concat(uuid, '/to_edit'))
+                    .then((data) => {
+                        resolve(data);
+                    })
+                    .catch((data) => {
+                        reject(data);
+                    })
+                    .finally(() => {
+                        commit('SET_STATE', {elementKey: STATE_EMAIL_COMPOSE_KEY, elementState: STATE_IDLE});
+                    })
+            });
         },
 
-        sendMessage({state}, payload) {
+        sendMessage({state, commit}, payload) {
 
+            commit('SET_STATE', {elementKey: STATE_EMAIL_COMPOSE_KEY, elementState: STATE_BUSY});
             return new Promise((resolve, reject) => {
                 ApiDealerX.post(
                     'mailbox/'.concat(state.activeAccountUuid, '/send'),
                     payload
                 )
-                    .then(() => {
-                        resolve();
+                    .then((data) => {
+                        resolve(data);
                     })
                     .catch((data) => {
                         reject(data);
+                    })
+                    .finally(() => {
+                        commit('SET_STATE', {elementKey: STATE_EMAIL_COMPOSE_KEY, elementState: STATE_IDLE});
                     })
             });
         }

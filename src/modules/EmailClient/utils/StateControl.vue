@@ -5,7 +5,7 @@
         name: 'StateControl',
 
         props: {
-            elementId: {
+            stateIndicator: {
                 type: String,
                 required: true,
             }
@@ -13,25 +13,11 @@
 
         computed: {
             busy() {
-                return this.$store.state.componentsState[this.elementId] === 'busy'
+                return this.$store.state.componentsState[this.stateIndicator] === 'busy';
             }
         },
 
-        methods: {
-            setBusy() {
-                this.$store.commit('SET_STATE', {
-                    elementId,
-                    elementState: 'busy'
-                });
-            },
-
-            setIdle() {
-                this.$store.commit('SET_STATE', {
-                    elementId,
-                    elementState: 'idle'
-                });
-            }
-        }
+        methods: {},
 
     }
 </script>

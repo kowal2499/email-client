@@ -33,10 +33,6 @@
             this.$on('initialized', (eventData) => {
                 this.$parent.$emit('initialized', eventData)
             });
-
-            this.$on('busy', (eventData) => {
-                this.$parent.$emit('busy', eventData)
-            });
         }
     }
 </script>

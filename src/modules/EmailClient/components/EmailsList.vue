@@ -62,60 +62,62 @@
             </template>
         </toolbar>
 
-        <div v-if="messages && messages.length > 0" class="table-responsive">
-            <table class="table">
-                <tbody>
+        <overlay :show="busy">
+            <div v-if="messages && messages.length > 0" class="table-responsive">
+                <table class="table">
+                    <tbody>
 
 
-                    <template v-for="message in messages">
+                        <template v-for="message in messages">
 
-                        <tr :key="message.uuid" v-if="isBusy(message.uuid, 'move')">
-                            <td colspan="5" class="text-center">
-                                <i class="icon-spinner anim"/> Trwa przenoszenie ...
-                            </td>
-                        </tr>
+                            <tr :key="message.uuid" v-if="isBusy(message.uuid, 'move')">
+                                <td colspan="5" class="text-center">
+                                    <i class="icon-spinner anim"/> Trwa przenoszenie ...
+                                </td>
+                            </tr>
 
-                        <tr v-else :key="message.uuid" @click="readMessage(message.uuid)" style="cursor: pointer; position:relative;">
-                            <td class="table-inbox-checkbox rowlink-skip" @click.stop="" style="background-color: #fcfcfc">
-                                <base-checkbox :value="message.uuid" v-model="checkedMessageUids"/>
-                            </td>
+                            <tr v-else :key="message.uuid" @click="readMessage(message.uuid)" style="cursor: pointer; position:relative;">
+                                <td class="table-inbox-checkbox rowlink-skip" @click.stop="" style="background-color: #fcfcfc">
+                                    <base-checkbox :value="message.uuid" v-model="checkedMessageUids"/>
+                                </td>
 
-                            <td class="flags" @click.stop="">
+                                <td class="flags" @click.stop="">
 
-                                <i v-if="isBusy(message.uuid, 'seen')" class="icon-spinner anim"/>
-                                <i
-                                        v-else
-                                        :class="message.flag.seen ? 'icon-circle-small' : 'icon-circles unseen'"
-                                        @click.prevent="updateFlag(message.uuid, 'seen', !message.flag.seen)"
-                                />
+                                    <i v-if="isBusy(message.uuid, 'seen')" class="icon-spinner anim"/>
+                                    <i
+                                            v-else
+                                            :class="message.flag.seen ? 'icon-circle-small' : 'icon-circles unseen'"
+                                            @click.prevent="updateFlag(message.uuid, 'seen', !message.flag.seen)"
+                                    />
 
-                                <i v-if="isBusy(message.uuid, 'stared')" class="icon-spinner anim"/>
-                                <i
-                                        v-else
-                                        :class="message.flag.stared ? 'icon-star-full2 stared' : 'icon-star-empty3'"
-                                        @click.prevent="updateFlag(message.uuid, 'stared', !message.flag.stared)"
-                                />
-                            </td>
+                                    <i v-if="isBusy(message.uuid, 'stared')" class="icon-spinner anim"/>
+                                    <i
+                                            v-else
+                                            :class="message.flag.stared ? 'icon-star-full2 stared' : 'icon-star-empty3'"
+                                            @click.prevent="updateFlag(message.uuid, 'stared', !message.flag.stared)"
+                                    />
+                                </td>
 
-                            <td style="width: 20%">
-                                <div><strong>{{ getFrom(message) }}</strong></div>
-                            </td>
-                            <td>
-                                <strong v-if="!message.flag.seen">{{ message.subject }}</strong>
-                                <span v-else>{{ message.subject }}</span>
+                                <td style="width: 20%">
+                                    <div><strong>{{ getFrom(message) }}</strong></div>
+                                </td>
+                                <td>
+                                    <strong v-if="!message.flag.seen">{{ message.subject }}</strong>
+                                    <span v-else>{{ message.subject }}</span>
 
-                            </td>
+                                </td>
 
-                            <td class="text-right" style="width: 20%">
-                                {{ formatDate(message.date) }}
-                            </td>
-                        </tr>
+                                <td class="text-right" style="width: 20%">
+                                    {{ formatDate(message.date) }}
+                                </td>
+                            </tr>
 
-                    </template>
+                        </template>
 
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
+        </overlay>
     </div>
 </template>
 
@@ -131,22 +133,18 @@
     import Move from "./Toolbar/Move";
     import Delete from "./Toolbar/Delete";
 
+    import StateControl from "../utils/StateControl";
+    import Overlay from "../utils/Overlay";
+
     export default {
 
         name: "EmailsList",
-        components: {Toolbar, Pagination, BaseCheckbox, MassCheck, MassFlag, Move, Delete},
+        extends: StateControl,
+
+        components: {Toolbar, Pagination, BaseCheckbox, MassCheck, MassFlag, Move, Delete, Overlay},
 
         computed: {
             ...mapState(['messages', 'componentsState', 'messagesMeta', 'activeFolderType']),
-        },
-
-        watch: {
-            'componentsState.messages': {
-                deep: true,
-                handler(value) {
-                    this.$parent.$emit('busy', !!value)
-                }
-            },
         },
 
         methods: {

@@ -1,6 +1,6 @@
 <template>
 
-    <div>
+    <overlay :show="busy">
         <ul class="list-group list-group-flush" v-if="folders.length > 0">
 
             <template v-for="folder in hardcodedFolders">
@@ -19,12 +19,14 @@
                 </a>
             </template>
         </ul>
-    </div>
+    </overlay>
 
 </template>
 
 <script>
     import {mapState} from 'vuex';
+    import StateControl from "../utils/StateControl";
+    import Overlay from "../utils/Overlay";
 
     const foldersMap = [
         {
@@ -60,6 +62,8 @@
 
     export default {
         name: "FoldersList",
+        extends: StateControl,
+        components: {Overlay},
 
         computed: {
             ...mapState(['folders', 'componentsState']),
@@ -69,15 +73,6 @@
             },
             currentFoldersTypes() {
                 return this.folders.map(f => f.type);
-            },
-        },
-
-        watch: {
-            'componentsState.folders': {
-                deep: true,
-                handler(value) {
-                    this.$parent.$emit('busy', !!value)
-                }
             },
         },
 
@@ -96,8 +91,6 @@
             }
         },
 
-        created() {
-        }
     }
 </script>
 

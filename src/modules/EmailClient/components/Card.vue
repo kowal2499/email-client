@@ -8,23 +8,18 @@
             </div>
         </slot>
 
-        <overlay :show="isBusy">
-            <div>
-                <slot name="content"/>
-            </div>
-
-        </overlay>
+        <div>
+            <slot name="content"/>
+        </div>
 
     </div>
 
 </template>
 
 <script>
-    import Overlay from "../utils/Overlay";
 
     export default {
         name: "Card",
-        components: {Overlay},
         props: {
             title: {
                 type: String
@@ -50,10 +45,6 @@
             this.$on('initialized', () => {
                 this.isBusy = false;
             });
-
-            this.$on('busy', (eventData) => {
-                this.isBusy = eventData;
-            })
         }
     }
 </script>
