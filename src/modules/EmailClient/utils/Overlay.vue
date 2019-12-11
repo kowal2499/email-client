@@ -56,7 +56,7 @@
             display: flex;
             align-items: center;
             background-color: rgba(255, 255, 255, 0.92);
-            z-index: 999999;
+            z-index: 100000;
 
             .overlay-message {
                 width: 100%;

@@ -2,7 +2,9 @@
     <button
             type="button"
             @click="handlerFn()"
-            class="btn btn-light"
+            class="btn"
+            :class="buttonClass"
+            :disabled="disabled"
     >
         <i :class="iconClass"/> <span class="d-none d-lg-inline-block ml-2 ">{{ label }}</span>
     </button>
@@ -14,19 +16,22 @@
             iconClass: {
                 type: String,
             },
+            buttonClass: {
+                type: String,
+                default: 'btn-light',
+            },
             label: {
                 type: String,
             },
             disabled: {
-                type: Boolean
+                type: Boolean,
+                default: false,
             }
         },
         name: "BaseWidget",
 
         methods: {
-            handlerFn() {
-                console.log('jestem zwyczają bazą')
-            }
+            handlerFn() {}
         }
     }
 </script>

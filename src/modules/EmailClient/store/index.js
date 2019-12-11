@@ -20,6 +20,11 @@ export default new Vuex.Store({
             folders: 1,
             messages: 1,
             showing: 'list',
+        },
+
+        route: {
+            componentName: 'emails-list',
+            title: 'Lista wiadomości',
             props: {}
         }
 
@@ -30,7 +35,6 @@ export default new Vuex.Store({
         },
         SELECT_ACCOUNT(state, accountUuid) {
             state.activeAccountUuid = accountUuid;
-            // state.componentsState.folders = 1
         },
         SET_FOLDERS(state, folders) {
             state.folders = folders;
@@ -68,6 +72,36 @@ export default new Vuex.Store({
             }
         },
 
+        SET_ROUTE(state, {componentName, title, props}) {
+            state.route.componentName = componentName;
+            state.route.title = title;
+            state.route.props = props;
+        },
+
+        SET_ROUTE_BY_NAME(state, {routeName, args}) {
+            const routes = {
+                emailList: {
+                    componentName: 'emails-list',
+                    title: 'Lista wiadomości',
+                },
+                emailRead: {
+                    componentName: 'email-read',
+                    title: 'Treść wiadomości',
+                },
+                emailCreate: {
+                    componentName: 'email-compose',
+                    title: 'Tworzenie wiadomości',
+                }
+            };
+
+            if (routes.hasOwnProperty(routeName)) {
+                state.route.componentName = routes[routeName].componentName;
+                state.route.title = routes[routeName].title;
+                state.route.props = args || {};
+            }
+        },
+
+
         UPDATE_FOLDER_COUNTERS(state, data) {
             if (data.flagName === 'seen') {
                 let folder = state.folders.find(f => f.type === state.activeFolderType);
@@ -100,8 +134,7 @@ export default new Vuex.Store({
 
             commit('SET_COMPONENT_STATE', {component: 'folders', newState: 1});
             commit('SET_COMPONENT_STATE', {component: 'messages', newState: 1});
-            commit('SET_SHOWING', 'list');
-
+            commit('SET_ROUTE_BY_NAME', {routeName: 'emailList'});
 
             return ApiDealerX.get('mailbox')
                 .then(({data}) => {
@@ -123,10 +156,10 @@ export default new Vuex.Store({
             commit('SELECT_ACCOUNT', account.uuid);
             // commit('SELECT_FOLDER', null);
 
-            commit('SET_SHOWING', 'list');
+            commit('SET_ROUTE_BY_NAME', {routeName: 'emailList'});
+
             commit('SET_COMPONENT_STATE', {component: 'folders', newState: 1});
             commit('SET_COMPONENT_STATE', {component: 'messages', newState: 1});
-
 
             return ApiDealerX.get('mailbox/'.concat(account.uuid))
                 .then(({data}) => {
@@ -175,19 +208,19 @@ export default new Vuex.Store({
         },
 
         selectEmail({commit}, emailUuid) {
-            commit('SET_SHOWING', 'read');
+            commit('SET_ROUTE_BY_NAME', {routeName: 'emailRead'});
             commit('SELECT_MESSAGE', emailUuid);
         },
 
         selectFolder({commit, dispatch}, type) {
             commit('SET_PAGE', 1);
-            commit('SET_SHOWING', 'list');
+            commit('SET_ROUTE_BY_NAME', {routeName: 'emailList'});
             commit('SELECT_FOLDER', type);
             dispatch('fetchMessages');
         },
 
         newEmail({commit}) {
-            commit('SET_SHOWING', 'create')
+            commit('SET_ROUTE_BY_NAME', {routeName: 'emailCreate'});
         },
 
         setFlag({commit, state}, payload) {
@@ -235,6 +268,22 @@ export default new Vuex.Store({
 
         fetchMessage({state}, uuid = null) {
             return ApiDealerX.get('mailbox/message/'.concat(uuid ? uuid : state.activeMessage))
+        },
+
+        sendMessage({state}, payload) {
+
+            return new Promise((resolve, reject) => {
+                ApiDealerX.post(
+                    'mailbox/'.concat(state.activeAccountUuid, '/send'),
+                    payload
+                )
+                    .then(() => {
+                        resolve();
+                    })
+                    .catch((data) => {
+                        reject(data);
+                    })
+            });
         }
 
     },

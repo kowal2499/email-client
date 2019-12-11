@@ -3,24 +3,16 @@
     <div>
         <toolbar>
             <template v-slot:buttons-left>
-                <reply-widget
-                    icon-class="icon-reply"
-                    label="Odpowiedz"
-                    :disabled="false"
-                    reply-type="reply"
-                />
-                <reply-widget
-                        icon-class="icon-reply-all"
-                        label="Odpowiedz wszystkim"
+
+                <reply-action v-for="(widget, key) in widgets.replyWidgets"
+                        :icon-class="widget.icon"
+                        :label="widget.label"
                         :disabled="false"
-                        reply-type="replyAll"
+                        :reply-type="widget.replyType"
+                        :message-uuid="$store.state.activeMessage"
+                        :key="key"
                 />
-                <reply-widget
-                        icon-class="icon-forward"
-                        label="Przekaż dalej"
-                        :disabled="false"
-                        reply-type="forward"
-                />
+
                 <base-widget
                         icon-class="icon-bin"
                         label="Usuń"
@@ -89,16 +81,24 @@
     import Attachment from "./email/Attachment";
     import Toolbar from "./Toolbar";
     import BaseWidget from "./Toolbar/BaseWidget";
-    import ReplyWidget from "./Toolbar/ReplyWidget";
+    import ReplyAction from "./Toolbar/ReplyAction";
 
     export default {
         name: "EmailRead",
-        components: {Contact, Attachment, Toolbar, BaseWidget, ReplyWidget},
+        components: {Contact, Attachment, Toolbar, BaseWidget, ReplyAction},
 
         data() {
             return {
                 message: null,
-                viewHTML: true
+                viewHTML: true,
+
+                widgets: {
+                    replyWidgets: [
+                        { icon: 'icon-reply', label: 'Odpowiedz', replyType: 'reply' },
+                        { icon: 'icon-reply-all', label: 'Odpowiedz wszystkim', replyType: 'replyAll' },
+                        { icon: 'icon-forward', label: 'Przekaż', replyType: 'forward' },
+                    ],
+                }
             }
         },
 

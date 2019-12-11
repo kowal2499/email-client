@@ -36,21 +36,14 @@
 
             </template>
 
-            <!-- Spróbować zastąpić poniższy fragment routingiem -->
+            <!-- Widok głównego komponentu -->
 
-            <card title="Treść wiadomości" slot="content" v-if="activeComponent === 'read'">
-                <email-read slot="content"/>
-            </card>
-
-            <card title="Nowa wiadomość" slot="content" v-else-if="activeComponent === 'create'">
-                <email-compose
+            <card slot="content" :title="route.title">
+                <component
+                        :is="route.componentName"
+                        v-bind="route.props"
                         slot="content"
-                        reply-to="d93fe895-19f0-446b-8d17-84c2bdc851d0"
                 />
-            </card>
-
-            <card title="Lista wiadomości" slot="content" v-else>
-                <emails-list slot="content"/>
             </card>
 
             <!-- -->
@@ -79,7 +72,7 @@
         components: {FullWidthLayout, EmailsList, SidebarLayout, FoldersList, Card, EmailCompose, EmailRead},
 
         computed: {
-            ...mapState(['availableAccounts', 'componentsState', 'activeAccountUuid']),
+            ...mapState(['availableAccounts', 'componentsState', 'activeAccountUuid', 'route']),
             ...mapGetters(['selectedAccount']),
 
 
